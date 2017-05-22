@@ -77,7 +77,7 @@ export const parseToJson = (str) => ({specActions, specSelectors, errActions}) =
   return specActions.updateJsonSpec(json)
 }
 
-export const resolveSpec = (json, url) => ({specActions, specSelectors, errActions, fn: { fetch, resolve, AST }}) => {
+export const resolveSpec = (json, url) => ({configs, specActions, specSelectors, errActions, fn: { fetch, resolve, AST }}) => {
   if(typeof(json) === "undefined") {
     json = specSelectors.specJson()
   }
@@ -88,6 +88,7 @@ export const resolveSpec = (json, url) => ({specActions, specSelectors, errActio
   let { getLineNumberForPath } = AST
 
   let specStr = specSelectors.specStr()
+  json = {...json, ...configs}
 
   return resolve({fetch, spec: json, baseDoc: url})
   .then( ({spec, errors}) => {
