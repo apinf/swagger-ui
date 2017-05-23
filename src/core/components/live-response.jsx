@@ -22,7 +22,7 @@ export default class LiveResponse extends React.Component {
   render() {
     const { request, response, getComponent } = this.props
 
-    const body = response.get("text")
+    const body = response.get("text") || response.getIn(["response", "text"])
     const status = response.get("status")
     const url = response.get("url")
     const headers = response.get("headers").toJS()
@@ -67,7 +67,7 @@ export default class LiveResponse extends React.Component {
                   </span>
                 }
                 {
-                  !body || isError ? null
+                  !body ? null
                         : <ResponseBody content={ body }
                                         contentType={ contentType }
                                         url={ url }
