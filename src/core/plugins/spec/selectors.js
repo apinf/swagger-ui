@@ -5,7 +5,6 @@ import { fromJS, Set, Map, List } from "immutable"
 const DEFAULT_TAG = "default"
 
 const OPERATION_METHODS = ["get", "put", "post", "delete", "options", "head", "patch"]
-const OPS = OPERATION_METHODS.map(m => m.toUpperCase())
 
 const state = state => {
   return state || Map()
@@ -230,7 +229,8 @@ export const requestFor = (state, path, method) => {
 }
 
 export const allowTryItOutFor = (state, path, method) => {
-  return state.getIn(['resolved', 'supportedSubmitMethods'], OPS).indexOf(method.toUpperCase()) >= 0
+  const allowedMethods = state.getIn(['resolved', 'supportedSubmitMethods'], OPERATION_METHODS);
+  return allowedMethods.indexOf(method) >= 0
 }
 
 // Get the parameter value by parameter name
