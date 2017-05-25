@@ -81,6 +81,12 @@ export const parseToJson = (str) => ({configs, specActions, specSelectors, errAc
     json.supportedSubmitMethods = configs.supportedSubmitMethods
   }
 
+  if (configs.host && configs.basePath) {
+    // Rewrite host & basePath
+    json.host = configs.host
+    json.basePath = configs.basePath
+  }
+
   if (configs.securityDefinitions) {
     json.securityDefinitions = Object.assign({}, json.securityDefinitions, configs.securityDefinitions)
     const schemas = []
