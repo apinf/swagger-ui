@@ -1,6 +1,7 @@
 import YAML from "js-yaml"
 import parseUrl from "url-parse"
 import serializeError from "serialize-error"
+import each from "lodash/forEach"
 
 // Actions conform to FSA (flux-standard-actions)
 // {type: string,payload: Any|Error, meta: obj, error: bool}
@@ -56,7 +57,7 @@ export function updateJsonSpec(json) {
   return {type: UPDATE_JSON, payload: json}
 }
 
-export const parseToJson = (str) => ({specActions, specSelectors, errActions}) => {
+export const parseToJson = (str) => ({configs, specActions, specSelectors, errActions}) => {
   let { specStr } = specSelectors
 
   let json = null
@@ -74,10 +75,33 @@ export const parseToJson = (str) => ({specActions, specSelectors, errActions}) =
       line: e.mark && e.mark.line ? e.mark.line + 1 : undefined
     })
   }
+
+  // Regulate Try out button
+  if (configs.supportedSubmitMethods) {
+    json.supportedSubmitMethods = configs.supportedSubmitMethods
+  }
+
+  if (configs.securityDefinitions) {
+    json.securityDefinitions = Object.assign({}, json.securityDefinitions, configs.securityDefinitions)
+    const schemas = []
+
+    each(configs.securityDefinitions, (value, key) => {
+      schemas.push({[key]: []})
+    })
+
+    json.security = (json.security || []).concat(schemas)
+
+    each(json.paths, path => each(path, method => {
+      if (method.security) {
+        method.security = method.security.concat(schemas)
+      }
+    }))
+  }
+
   return specActions.updateJsonSpec(json)
 }
 
-export const resolveSpec = (json, url) => ({configs, specActions, specSelectors, errActions, fn: { fetch, resolve, AST }}) => {
+export const resolveSpec = (json, url) => ({configs, authActions, authSelectors, specActions, specSelectors, errActions, fn: { fetch, resolve, AST }}) => {
   if(typeof(json) === "undefined") {
     json = specSelectors.specJson()
   }
@@ -88,7 +112,6 @@ export const resolveSpec = (json, url) => ({configs, specActions, specSelectors,
   let { getLineNumberForPath } = AST
 
   let specStr = specSelectors.specStr()
-  json = {...json, ...configs}
 
   return resolve({fetch, spec: json, baseDoc: url})
   .then( ({spec, errors}) => {
@@ -113,6 +136,17 @@ export const resolveSpec = (json, url) => ({configs, specActions, specSelectors,
 
     return specActions.updateResolved(spec)
   })
+    .then(() => {
+    // Add own securityDefinitions which is provided from configs file
+    each(configs.apiKeyValues, (value, name) => {
+        const schema = specSelectors.securityDefinitions().get(name)
+        if (schema && schema.size) {
+          authActions.authorize({
+            [name]: {name, value, schema}
+          })
+        }
+      })
+    })
 }
 
 export const formatIntoYaml = () => ({specActions, specSelectors}) => {
