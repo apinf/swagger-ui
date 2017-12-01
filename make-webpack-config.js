@@ -61,8 +61,7 @@ module.exports = function(options) {
         compressor: {
           warnings: false
         }
-      }),
-      new webpack.optimize.DedupePlugin()
+      })
     )
 
     plugins.push( new webpack.NoErrorsPlugin())
