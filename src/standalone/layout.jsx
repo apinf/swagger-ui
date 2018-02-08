@@ -1,4 +1,7 @@
-import React, { PropTypes } from "react"
+
+
+import React from "react"
+import PropTypes from "prop-types"
 
 export default class StandaloneLayout extends React.Component {
 
@@ -13,7 +16,7 @@ export default class StandaloneLayout extends React.Component {
   }
 
   render() {
-    let { getComponent, specSelectors } = this.props
+    let { getComponent, specSelectors, errSelectors } = this.props
 
     let Container = getComponent("Container")
     let Row = getComponent("Row")
@@ -24,27 +27,37 @@ export default class StandaloneLayout extends React.Component {
     const OnlineValidatorBadge = getComponent("onlineValidatorBadge", true)
 
     const loadingStatus = specSelectors.loadingStatus()
+    const lastErr = errSelectors.lastError()
+    const lastErrMsg = lastErr ? lastErr.get("message") : ""
 
     return (
 
       <Container className='swagger-ui'>
-        { Topbar ? <Topbar/> : null }
+        { Topbar ? <Topbar /> : null }
         { loadingStatus === "loading" &&
           <div className="info">
-            <h4 className="title">Loading...</h4>
+            <div className="loading-container">
+              <div className="loading"></div>
+            </div>
           </div>
         }
         { loadingStatus === "failed" &&
           <div className="info">
-            <h4 className="title">Failed to load spec.</h4>
+            <div className="loading-container">
+              <h4 className="title">Failed to load API definition.</h4>
+              <p>{lastErrMsg}</p>
+            </div>            
           </div>
         }
         { loadingStatus === "failedConfig" &&
           <div className="info" style={{ maxWidth: "880px", marginLeft: "auto", marginRight: "auto", textAlign: "center" }}>
-            <h4 className="title">Failed to load config.</h4>
+            <div className="loading-container">
+              <h4 className="title">Failed to load remote configuration.</h4>
+              <p>{lastErrMsg}</p>
+            </div>
           </div>
         }
-        { !loadingStatus || loadingStatus === "success" && <BaseLayout/> }
+        { !loadingStatus || loadingStatus === "success" && <BaseLayout /> }
         <Row>
           <Col>
             <OnlineValidatorBadge />

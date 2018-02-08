@@ -29,8 +29,8 @@ describe("spec plugin - selectors", function(){
             "/one": {
               get: {
                 parameters: [
-                  { name: "one", value: 1},
-                  { name: "two", value: "duos"}
+                  { name: "one", in: "query", value: 1},
+                  { name: "two", in: "query", value: "duos"}
                 ]
               }
             }
@@ -43,8 +43,8 @@ describe("spec plugin - selectors", function(){
 
       // Then
       expect(paramValues.toJS()).toEqual({
-        one: 1,
-        two: "duos"
+        "query.one": 1,
+        "query.two": "duos"
       })
 
     })
@@ -52,11 +52,17 @@ describe("spec plugin - selectors", function(){
   })
 
   describe("contentTypeValues", function(){
-
     it("should return { requestContentType, responseContentType } from an operation", function(){
       // Given
       let state = fromJS({
         resolved: {
+          paths: {
+            "/one": {
+              get: {}
+            }
+          }
+        },
+        meta: {
           paths: {
             "/one": {
               get: {
@@ -77,7 +83,147 @@ describe("spec plugin - selectors", function(){
       })
     })
 
-    it("should be ok, if no operation found", function(){
+    it("should default to the first `produces` array value if current is not set", function(){
+      // Given
+      let state = fromJS({
+        resolved: {
+          paths: {
+            "/one": {
+              get: {
+                produces: [
+                  "application/xml",
+                  "application/whatever"
+                ]
+              }
+            }
+          }
+        },
+        meta: {
+          paths: {
+            "/one": {
+              get: {
+                "consumes_value": "one"
+              }
+            }
+          }
+        }
+      })
+
+      // When
+      let contentTypes = contentTypeValues(state, [ "/one", "get" ])
+      // Then
+      expect(contentTypes.toJS()).toEqual({
+        requestContentType: "one",
+        responseContentType: "application/xml"
+      })
+    })
+
+    it("should default to `application/json` if a default produces value is not available", function(){
+      // Given
+      let state = fromJS({
+        resolved: {
+          paths: {
+            "/one": {
+              get: {}
+            }
+          }
+        },
+        meta: {
+          paths: {
+            "/one": {
+              get: {
+                "consumes_value": "one"
+              }
+            }
+          }
+        }
+      })
+
+      // When
+      let contentTypes = contentTypeValues(state, [ "/one", "get" ])
+      // Then
+      expect(contentTypes.toJS()).toEqual({
+        requestContentType: "one",
+        responseContentType: "application/json"
+      })
+    })
+
+    it("should prioritize consumes value first from an operation", function(){
+      // Given
+      let state = fromJS({
+        resolved: {
+          paths: {
+            "/one": {
+              get: {
+                "parameters": [{
+                  "type": "file"
+                }],
+              }
+            }
+          }
+        },
+        meta: {
+          paths: {
+            "/one": {
+              get: {
+                "consumes_value": "one",
+              }
+            }
+          }
+        }
+      })
+
+      // When
+      let contentTypes = contentTypeValues(state, [ "/one", "get" ])
+      // Then
+      expect(contentTypes.toJS().requestContentType).toEqual("one")
+    })
+
+    it("should fallback to multipart/form-data if there is no consumes value but there is a file parameter", function(){
+      // Given
+      let state = fromJS({
+        resolved: {
+          paths: {
+            "/one": {
+              get: {
+                "parameters": [{
+                  "type": "file"
+                }],
+              }
+            }
+          }
+        }
+      })
+
+      // When
+      let contentTypes = contentTypeValues(state, [ "/one", "get" ])
+      // Then
+      expect(contentTypes.toJS().requestContentType).toEqual("multipart/form-data")
+    })
+
+    it("should fallback to application/x-www-form-urlencoded if there is no consumes value, no file parameter, but there is a formData parameter", function(){
+      // Given
+      let state = fromJS({
+        resolved: {
+          paths: {
+            "/one": {
+              get: {
+                "parameters": [{
+                  "type": "formData"
+                }],
+              }
+            }
+          }
+        }
+      })
+
+      // When
+      let contentTypes = contentTypeValues(state, [ "/one", "get" ])
+      // Then
+      expect(contentTypes.toJS().requestContentType).toEqual("application/x-www-form-urlencoded")
+    })
+
+    it("should return nothing, if the operation does not exist", function(){
       // Given
       let state = fromJS({ })
 
